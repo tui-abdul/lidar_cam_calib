@@ -38,7 +38,7 @@ class lidar_publisher(Node):
         self.lidar_msg = msg
 
         self.lidar_msg.header.stamp.sec = int(current_time.nanoseconds // 1e9)
-        self.lidar_msg.header.stamp.nanosec = int(current_time.nanoseconds // 1e9)
+        #self.lidar_msg.header.stamp.nanosec = int(current_time.nanoseconds // 1e9)
         
         self.publisher_lidar.publish(self.lidar_msg)
  

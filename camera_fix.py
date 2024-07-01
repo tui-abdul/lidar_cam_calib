@@ -19,15 +19,18 @@ class camera_publisher(Node):
         self.subscription = self.create_subscription(Image, '/cam_teleoperation/front_mid',self.listener_callback,10)
         self.camera_msg = Image()
         self.bridge = CvBridge()
+        self.system_clock = self.get_clock()
+        
         
     def listener_callback(self, msg):
 
         current_time = self.get_clock().now()
         
         self.camera_msg = msg
-
+        print('msg time',self.camera_msg.header.stamp)
+        print('ros time',current_time.nanoseconds)
         self.camera_msg.header.stamp.sec = int(current_time.nanoseconds // 1e9)
-        self.camera_msg.header.stamp.nanosec = int(current_time.nanoseconds // 1e9)
+        #self.camera_msg.header.stamp.nanosec = int(current_time.nanoseconds // 1e9)
         
         self.publisher_camera.publish(self.camera_msg)
  
