@@ -19,7 +19,7 @@ class camera_publisher(Node):
     def __init__(self):
         super().__init__('publisher')
         #with open('/home/abd1340m/Dokumente/ros2_overlay/src/overlay/overlay/0372_622_data/40253622.yaml', "r") as file_handle:
-        with open('/home/abd1340m/Dokumente/extrinsic_calibration/calibration_results/1108_618_data/40243618.yaml', "r") as file_handle:
+        with open('front_mid_teleop.yaml', "r") as file_handle:
         #with open('/home/abd1340m/Dokumente/os_0-webcam/valeo_cam.yaml', "r") as file_handle:
         #with open('calibrationdata_office_new_basler/ost.yaml', "r") as file_handle:     
         
@@ -32,8 +32,8 @@ class camera_publisher(Node):
     
         #image_color = '/basler_pole_a_left_id_103_sn_603/my_camera/pylon_ros2_camera_node/image_raw'  #pole a
         #ouster = '/ouster_pole_a_1108/points'  # pole a
-        image_color = '/basler_pole_a_right_id_104_sn_618/my_camera/pylon_ros2_camera_node/image_raw'  
-        ouster = '/ouster_pole_a_1108/points' 
+        image_color = '/cam_teleoperation/front_mid'  
+        ouster = '/points' 
                 # Subscribe to topics
         image_sub = message_filters.Subscriber(self,Image,image_color)
         ouster = message_filters.Subscriber(self, PointCloud2,ouster,qos_profile= qos.qos_profile_sensor_data)#qos.ReliabilityPolicy.BEST_EFFORT)
@@ -59,8 +59,8 @@ class camera_publisher(Node):
         #self.tvec = np.array([ -0.12755348, 0.03376902, 0.09379576],dtype=np.float64).reshape((3,1)) # intersection data lidar 1108 and camera 618
         #self.rvec = np.array([  0.82430635, -1.5835378 , 1.71078744],dtype=np.float64).reshape((3,1)) # intersection data lidar 1108 and camera 618
 
-        self.tvec = np.array([-0.08395037, 0.08563563, 0.04123897],dtype=np.float64).reshape((3,1)) # intersection data lidar 1108 and camera 618
-        self.rvec = np.array([   0.82531045,-1.60385241,  1.71514413],dtype=np.float64).reshape((3,1)) # intersection data lidar 1108 and camera 618
+        self.tvec = np.array([ -0.06127661, -0.09048259, 0.11473779],dtype=np.float64).reshape((3,1)) # intersection data lidar 1108 and camera 618
+        self.rvec = np.array([   1.23048919, -1.21280759, 1.16656343],dtype=np.float64).reshape((3,1)) # intersection data lidar 1108 and camera 618
 
         print("initialization done")
 
@@ -79,7 +79,7 @@ class camera_publisher(Node):
         t_mat =np.array([
                 [-1, 0, 0, 0], 
                 [0, -1, 0, 0], 
-                [0, 0, 1, 0.038195], 
+                [0, 0, 1, 0.038195], #make it zero as well
                 [0, 0, 0, 1]
             ])
         column_of_ones = np.ones((pc_as_numpy_array.shape[0] , 1))
@@ -124,10 +124,10 @@ class camera_publisher(Node):
         lidar_points = pc_as_numpy_ring[:,:3]
         lidar_points = np.array(lidar_points,dtype=np.float32)
         intensities = pc_as_numpy_ring[:,3]  
-        lidar_points = self.trasnformation(lidar_points)[:,:3] 
+        #lidar_points = self.trasnformation(lidar_points)[:,:3] 
 
         
-        yaw_mask = self.filter_points_within_yaw(lidar_points, 60,90)
+        yaw_mask = self.filter_points_within_yaw(lidar_points, 60,60)
         lidar_points= lidar_points[yaw_mask]
         intensities = intensities[yaw_mask] 
         
@@ -170,7 +170,7 @@ class camera_publisher(Node):
         # Visualize valid LiDAR points on the image
         for point, color in zip(undistorted_points, colors):
             x, y = point
-            cv2.circle(undistorted_image, (x, y), radius=3, color=(int(color[0]), int(color[1]), int(color[2])), thickness=3)
+            cv2.circle(undistorted_image, (x, y), radius=1, color=(int(color[0]), int(color[1]), int(color[2])), thickness=2)
             #cv2.circle(image, (x, y), radius=3,color=[0,0,255] , thickness=-1)
 
 

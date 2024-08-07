@@ -20,8 +20,8 @@ from bound_gui import create_slider_gui
 #from sensor_msgs import point_cloud2
 from sensor_msgs_py.point_cloud2 import read_points
 from functools import partial
-#import tkinter as tk
-#from tkinter import ttk
+import tkinter as tk
+from tkinter import ttk
 import pyransac3d as pyrsc
 from pynput import keyboard
 #from data.pyqt5_ import SliderGUI
@@ -40,7 +40,7 @@ class calib(Node):
 
     def __init__(self):
         super().__init__('publisher')
-        with open('/home/abd1340m/Dokumente/extrinsic_calibration/calibration_results/1108_618_data/40243618.yaml', "r") as file_handle:
+        with open('front_mid_teleop.yaml', "r") as file_handle:
             self.calib_data = yaml.safe_load(file_handle)
 
         matrix_coefficients =    self.calib_data["camera_matrix"]["data"]
@@ -48,15 +48,15 @@ class calib(Node):
         self.matrix_coefficients = np.array(matrix_coefficients).reshape(3,3)
         self.distortion_coefficients = np.array(distortion_coefficients)
         self.save_path = "/home/abd1340m/Dokumente/os_0-webcam/data/"
-        image_color = '/basler_pole_a_right_id_104_sn_618/my_camera/pylon_ros2_camera_node/image_raw'
-        ouster = '/ouster_pole_a_1108/points'
+        image_color = '/cam_teleoperation/front_mid'
+        ouster = '/points'
                 # Subscribe to topics
         image_sub = message_filters.Subscriber(self,Image,image_color)
         ouster = message_filters.Subscriber(self, PointCloud2,ouster,qos_profile= qos.qos_profile_sensor_data)#qos.ReliabilityPolicy.BEST_EFFORT)
 
         # Synchronize the topics by time
         ats = message_filters.ApproximateTimeSynchronizer(
-            [image_sub, ouster], queue_size=20, slop=0.10, allow_headerless=True)
+            [image_sub, ouster], queue_size=20, slop=0.1, allow_headerless=True)
         ats.registerCallback(self.callbacks)
         #self.listener(image_color,ouster)
         
@@ -77,7 +77,7 @@ class calib(Node):
         self.skip_flag = None
         self.points_2d = []
         self.points_3d = []  
-    
+        print('Initialization complete')
     def overlay(self,image_msg,lidar_msg,rvec,tvec):
         #image = self.bridge.imgmsg_to_cv2(image_msg, desired_encoding="passthrough")
         #image = cv2.cvtColor(image_msg, cv2.COLOR_GRAY2BGR)
@@ -141,7 +141,7 @@ class calib(Node):
         t_mat =np.array([
                 [-1, 0, 0, 0], 
                 [0, -1, 0, 0], 
-                [0, 0, 1, 0.038195], 
+                [0, 0, 1, 0], 
                 [0, 0, 0, 1]
             ])
         column_of_ones = np.ones((pc_as_numpy_array.shape[0] , 1))
@@ -893,14 +893,14 @@ class calib(Node):
         #pc_as_numpy_array = np.array(ros2_numpy.point_cloud2.point_cloud2_to_array(ouster)['xyz'])
         #print('resolution2',pc_as_numpy_array.shape)
         #print(np.array_equal(pc_as_numpy_array[250:300,:] ,pc_as_numpy_ring[250:300,:] ))
-        pc_as_numpy_array = self.trasnformation(pc_as_numpy_ring[:,:3] )
+        #pc_as_numpy_array = self.trasnformation(pc_as_numpy_ring[:,:3] )
         #print("shape of lidar points",pc_as_numpy_array[:,:3].shape)
         
         #print("shape of lidar points",pc_as_numpy_array.shape)
-        pc_as_numpy_array = np.hstack((pc_as_numpy_array[:,:3],pc_as_numpy_ring[:,3].reshape(-1,1)))
-        roi = self.select_roi(pc_as_numpy_array)
+        #pc_as_numpy_array = np.hstack((pc_as_numpy_array[:,:3],pc_as_numpy_ring[:,3].reshape(-1,1)))
+        #roi = self.select_roi(pc_as_numpy_array)
        
-        #roi = self.select_roi(pc_as_numpy_ring)
+        roi = self.select_roi(pc_as_numpy_ring)
         print('roi',roi)
         print('in the main callback')
         if self.skip_flag == 'skip':
@@ -963,26 +963,27 @@ class calib(Node):
         #print("roi1",roi1)
         #points2D_more_more_points = self.project_lidar_data(roi1, rvec, tvec, self.matrix_coefficients, self.distortion_coefficients)
         print('proj points',points2D_reproj)
-        self.project_points(undistort_frame,points2D_reproj)
+        #self.project_points(undistort_frame,points2D_reproj)
+        self.project_points(frame,points2D_reproj)
         #   self.project_more_points(undistort_frame,points2D_more_points)
         #self.project_more_more_points(undistort_frame,points2D_more_more_points)
         rmse = self.re_proj_error(points2D_reproj,corners )
         print('rmse',rmse)
         cv2.namedWindow("Image", cv2.WINDOW_NORMAL) 
+        cv2.imshow('Image',frame)
         #cv2.imshow('Image',undistort_frame)
-        cv2.imshow('Image',undistort_frame)
 
         #draw_pointcloud_color(pc_as_numpy_ring[:,:3] , undistort_frame, rvec, tvec, self.matrix_coefficients, [1200,800] )
         if rmse < 20:
-            self.points_2d.append(corners)
-            self.points_3d.append(obj_points)
-            object_pts = np.array(self.points_3d)
-            object_pts = object_pts.reshape(object_pts.shape[0]*object_pts.shape[1],object_pts.shape[2])
-            rvec_add ,tvec_add = self.calculate_ext_param_comulative(object_pts,self.points_2d,self.matrix_coefficients,self.distortion_coefficients)
-            points2D_reproj = self.project_lidar_data(object_pts, rvec_add, tvec_add, self.matrix_coefficients, self.distortion_coefficients)
-            rmse = self.re_proj_error_comulative(np.squeeze(points2D_reproj),np.squeeze(np.asarray(self.points_2d)) )
-            print('commulative rmse',rmse)
-            self.transformation_matrix(rvec_add ,tvec_add)
+            #self.points_2d.append(corners)
+            #self.points_3d.append(obj_points)
+            #object_pts = np.array(self.points_3d)
+            #object_pts = object_pts.reshape(object_pts.shape[0]*object_pts.shape[1],object_pts.shape[2])
+            #rvec_add ,tvec_add = self.calculate_ext_param_comulative(object_pts,self.points_2d,self.matrix_coefficients,self.distortion_coefficients)
+            #points2D_reproj = self.project_lidar_data(object_pts, rvec_add, tvec_add, self.matrix_coefficients, self.distortion_coefficients)
+            #rmse = self.re_proj_error_comulative(np.squeeze(points2D_reproj),np.squeeze(np.asarray(self.points_2d)) )
+            #print('commulative rmse',rmse)
+            #self.transformation_matrix(rvec_add ,tvec_add)
             filename_1 = 'img_points.txt'
             filename_2 = 'lidar_points.txt'
             if os.path.exists(filename_1 and filename_2):
@@ -996,12 +997,20 @@ class calib(Node):
                 np.savetxt('img_points.txt', corners, delimiter=',', fmt='%.2f')
                 np.savetxt('lidar_points.txt', obj_points, delimiter=',', fmt='%.2f')
             #self.overlay(frame,ouster,rvec_add,tvec_add)
+            if os.path.exists(filename_1 and filename_2):
+                with open(filename_1, 'r') as file1:
+                    line_count1 = sum(1 for line in file1)
+                    print('image file line count',line_count1)
+                with open(filename_1, 'r') as file2:
+                    line_count2 = sum(1 for line in file2)
+                    print('image file line count',line_count2)
+
         while True:
             key = cv2.waitKey(0)
             if key == 27:  # 27 is the ASCII code for the Escape key
                 cv2.destroyAllWindows()
                 break
-
+                
         self.skip_flag = None
         
 

@@ -27,7 +27,7 @@ class lidar_publisher(Node):
         
 
         self.publisher_lidar = self.create_publisher(PointCloud2, '/lidar/points', 10)
-        self.subscription = self.create_subscription(PointCloud2, '/points',self.listener_callback,qos.qos_profile_sensor_data)
+        self.subscription = self.create_subscription(PointCloud2, '/ouster/points',self.listener_callback,qos.qos_profile_sensor_data)
         self.lidar_msg = PointCloud2()
         self.bridge = CvBridge()
         
@@ -38,7 +38,7 @@ class lidar_publisher(Node):
         self.lidar_msg = msg
 
         self.lidar_msg.header.stamp.sec = int(current_time.nanoseconds // 1e9)
-        #self.lidar_msg.header.stamp.nanosec = int(current_time.nanoseconds // 1e9)
+        self.lidar_msg.header.stamp.nanosec = int(current_time.nanoseconds // 1e9)
         
         self.publisher_lidar.publish(self.lidar_msg)
  
